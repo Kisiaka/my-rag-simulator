@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RAG Studio — Learn Retrieval-Augmented Generation</title>
+<style>
+  :root {
+    --ink:#222222; --muted:#717171; --line:#dddddd; --soft:#f7f7f7;
+    --pink:#ff385c; --pink-dark:#e31c5f; --green:#087f5b; --amber:#9a6700;
+    --shadow:0 8px 28px rgba(0,0,0,.08); --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--ink);background:#fff;line-height:1.5}
+  button,input,textarea,select{font:inherit}
+  button{cursor:pointer}
+  .topbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid #eee}
+  .nav{max-width:1240px;margin:auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:20px;letter-spacing:-.6px}
+  .brand-mark{width:34px;height:34px;border-radius:11px;background:var(--pink);color:#fff;display:grid;place-items:center;font-weight:900}
+  .nav-note{font-size:13px;color:var(--muted)}
+  .hero{max-width:1240px;margin:auto;padding:34px 24px 22px}
+  .eyebrow{color:var(--pink-dark);font-weight:800;text-transform:uppercase;font-size:11px;letter-spacing:1.5px}
+  h1{font-size:clamp(30px,4vw,48px);line-height:1.08;letter-spacing:-1.8px;margin:9px 0 12px}
+  .hero p{max-width:750px;color:#5e5e5e;margin:0;font-size:16px}
+  .pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .pill{border:1px solid var(--line);border-radius:999px;padding:7px 11px;font-size:12px;color:#444;background:#fff}
+  .layout{max-width:1240px;margin:0 auto;padding:0 24px 48px;display:grid;grid-template-columns:260px minmax(0,1fr);gap:24px;align-items:start}
+  .sidebar{position:sticky;top:86px;border:1px solid var(--line);border-radius:var(--radius);padding:14px;background:#fff}
+  .side-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:800;padding:7px 9px 11px}
+  .step-link{width:100%;display:flex;align-items:center;gap:10px;border:0;background:transparent;padding:11px 9px;border-radius:12px;text-align:left;color:#444;margin:2px 0}
+  .step-link:hover{background:#fafafa}
+  .step-link.active{background:#fff0f3;color:#b20f42;font-weight:750}
+  .step-num{width:27px;height:27px;flex:0 0 27px;border-radius:50%;border:1px solid #ddd;display:grid;place-items:center;font-size:12px;background:#fff}
+  .step-link.active .step-num{background:var(--pink);border-color:var(--pink);color:#fff}
+  .step-name{font-size:13px}
+  .progress-wrap{padding:13px 9px 5px}
+  .progress-label{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-bottom:7px}
+  .progress{height:6px;border-radius:20px;background:#eee;overflow:hidden}
+  .progress > div{height:100%;width:14.28%;background:var(--pink);transition:width .25s}
+  .main{min-width:0}
+  .panel{border:1px solid var(--line);border-radius:var(--radius);padding:clamp(18px,3vw,28px);box-shadow:0 2px 10px rgba(0,0,0,.025);margin-bottom:18px}
+  .panel-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+  .panel h2{font-size:24px;letter-spacing:-.6px;margin:3px 0 5px}
+  .panel-intro{color:var(--muted);font-size:14px;margin:0;max-width:700px}
+  .stage-tag{background:#f7f7f7;border:1px solid #eee;border-radius:999px;padding:6px 10px;font-size:11px;white-space:nowrap;color:#555}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .field-label{display:block;font-size:12px;font-weight:750;margin:0 0 7px}
+  textarea,input[type=text],select{width:100%;border:1px solid #cfcfcf;border-radius:12px;padding:12px 13px;outline:none;background:#fff;color:var(--ink)}
+  textarea:focus,input:focus,select:focus{border-color:#777;box-shadow:0 0 0 3px rgba(255,56,92,.08)}
+  textarea{min-height:160px;resize:vertical;line-height:1.55}
+  .helper{font-size:12px;color:var(--muted);margin-top:6px}
+  .btn-row{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+  .btn{border:1px solid #222;background:#222;color:#fff;padding:10px 15px;border-radius:10px;font-weight:750;font-size:13px}
+  .btn:hover{background:#444}
+  .btn.primary{background:var(--pink);border-color:var(--pink)}
+  .btn.primary:hover{background:var(--pink-dark)}
+  .btn.secondary{background:#fff;color:#222;border-color:#ccc}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .notice{border-radius:12px;background:#f7f7f7;padding:12px 14px;color:#555;font-size:13px;margin-top:14px}
+  .notice.good{background:#eaf7f1;color:#17684d}
+  .notice.warn{background:#fff7e6;color:#805b00}
+  .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .card{border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0;background:#fff}
+  .card-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:9px}
+  .card-title{font-weight:800;font-size:13px}
+  .badge{border-radius:999px;background:#f2f2f2;padding:4px 8px;font-size:10px;font-weight:750;color:#555;white-space:nowrap}
+  .badge.pink{background:#fff0f3;color:#b20f42}
+  .badge.green{background:#eaf7f1;color:#17684d}
+  .card p,.card .small-text{font-size:12px;color:#5e5e5e;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+  .mini-label{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.7px;font-weight:800;margin:10px 0 4px}
+  .vector{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px;color:#555;background:#f7f7f7;border-radius:8px;padding:8px;overflow-wrap:anywhere}
+  .empty{border:1px dashed #ccc;border-radius:14px;padding:24px;text-align:center;color:var(--muted);font-size:13px;background:#fcfcfc}
+  .flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .flow-step{flex:1;min-width:105px;border:1px solid var(--line);border-radius:12px;padding:11px;background:#fff}
+  .flow-step strong{display:block;font-size:12px;margin-bottom:4px}
+  .flow-step span{display:block;font-size:11px;color:var(--muted)}
+  .flow-arrow{align-self:center;color:#aaa;font-weight:900}
+  .rank-row{display:grid;grid-template-columns:34px minmax(0,1fr) 75px;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:11px;margin:8px 0}
+  .rank-num{width:28px;height:28px;border-radius:9px;background:#f4f4f4;display:grid;place-items:center;font-weight:800;font-size:12px}
+  .rank-title{font-size:12px;font-weight:800}
+  .rank-excerpt{font-size:11px;color:var(--muted);margin-top:3px}
+  .score{font-weight:800;font-size:12px;text-align:right}
+  .bar{height:5px;border-radius:20px;background:#eee;margin-top:5px;overflow:hidden}
+  .bar div{height:100%;background:var(--pink)}
+  .answer-box{border:1px solid #f4c6d0;background:#fff8fa;border-radius:14px;padding:17px}
+  .answer-box h3{font-size:14px;margin:0 0 9px}
+  .answer-box p{font-size:14px;white-space:pre-wrap;margin:0}
+  .source-list{margin-top:14px;border-top:1px solid #f2dce1;padding-top:11px}
+  .source-list li{font-size:12px;color:#555;margin:4px 0}
+  .quiz-option{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;cursor:pointer}
+  .quiz-option:hover{border-color:#999}
+  .quiz-option input{margin-top:4px;accent-color:var(--pink)}
+  .quiz-option.correct{border-color:#2b8a65;background:#f0faf5}
+  .quiz-option.incorrect{border-color:#dc3545;background:#fff6f6}
+  .quiz-option span{font-size:13px}
+  .footer-actions{display:flex;justify-content:space-between;gap:10px;margin-top:18px}
+  .tiny{font-size:11px;color:#888}
+  .hidden{display:none!important}
+  .code-like{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+  @media(max-width:850px){.layout{grid-template-columns:1fr}.sidebar{position:static}.side-steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}.side-title{padding-bottom:4px}.grid-2{grid-template-columns:1fr}.nav-note{display:none}}
+  @media(max-width:520px){.hero,.layout{padding-left:14px;padding-right:14px}.nav{padding:12px 14px}.cards{grid-template-columns:1fr}.side-steps{grid-template-columns:1fr 1fr}.panel-head{display:block}.stage-tag{display:inline-block;margin-top:9px}.flow-arrow{display:none}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="nav">
+    <div class="brand"><div class="brand-mark">R</div><span>RAG Studio</span></div>
+    <div class="nav-note">A hands-on learning lab · No API key required</div>
+    <button class="btn secondary" id="resetTop">Reset lab</button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="eyebrow">Learn by doing</div>
+  <h1>From documents to<br>useful AI answers.</h1>
+  <p>Explore how Retrieval-Augmented Generation works, one stage at a time. Add sample bank documents, chunk them, create illustrative embeddings, retrieve relevant passages, and see how an LLM uses those passages to answer a question.</p>
+  <div class="pill-row">
+    <span class="pill">✓ Single HTML file</span><span class="pill">✓ Interactive walkthrough</span><span class="pill">✓ Sample banking knowledge base</span><span class="pill">✓ Runs in your browser</span>
+  </div>
+</section>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="side-title">Learning path</div>
+    <div class="side-steps" id="stepNav">
+      <button class="step-link active" data-step="0"><span class="step-num">1</span><span class="step-name">Ingest documents</span></button>
+      <button class="step-link" data-step="1"><span class="step-num">2</span><span class="step-name">Chunk the text</span></button>
+      <button class="step-link" data-step="2"><span class="step-num">3</span><span class="step-name">Create embeddings</span></button>
+      <button class="step-link" data-step="3"><span class="step-num">4</span><span class="step-name">Store & index</span></button>
+      <button class="step-link" data-step="4"><span class="step-num">5</span><span class="step-name">Retrieve context</span></button>
+      <button class="step-link" data-step="5"><span class="step-num">6</span><span class="step-name">Generate answer</span></button>
+      <button class="step-link" data-step="6"><span class="step-num">7</span><span class="step-name">Check your learning</span></button>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>Your progress</span><strong id="progressText">Step 1 of 7</strong></div>
+      <div class="progress"><div id="progressBar"></div></div>
+    </div>
+    <div class="notice" style="margin:12px 5px 4px"><strong>Learning note</strong><br>This is a simplified simulation. It does not call a real embedding model, vector database, or LLM.</div>
+  </aside>
+
+  <main class="main">
+    <section class="panel stage" data-stage="0">
+      <div class="panel-head"><div><div class="eyebrow">Step 1 · Ingestion</div><h2>Give your assistant something to know</h2><p class="panel-intro">RAG starts with external knowledge. Add a few source documents, such as FAQs, policies, or product guides. The assistant will search these sources when a user asks a question.</p></div><span class="stage-tag">Source documents</span></div>
+      <div class="grid-2">
+        <div>
+          <label class="field-label" for="docName">Document title</label>
+          <input id="docName" type="text" value="Business Account Opening Guide" placeholder="e.g. Transfer Limits FAQ">
+          <label class="field-label" for="docText" style="margin-top:13px">Document content</label>
+          <textarea id="docText">To open a business account, applicants need a valid government-issued ID for each signing officer, business registration documents, the business address, and tax identification details. The bank may request beneficial ownership information and additional verification depending on the business type.
+
+Applications can be submitted online. After the documents are received, the bank reviews the application and may contact the applicant if information is missing. Approval is subject to identity verification and the bank's account-opening policies.</textarea>
+          <div class="helper">Tip: add a second document about transfers or complaints to see retrieval choose between sources.</div>
+          <div class="btn-row"><button class="btn primary" id="addDoc">Add document</button><button class="btn secondary" id="loadSamples">Load sample bank library</button></div>
+        </div>
+        <div>
+          <div class="card-top"><span class="card-title">Your source library</span><span class="badge" id="docCount">1 document</span></div>
+          <div id="docList" class="cards"></div>
+          <div class="notice good" id="ingestNote">A sample document is ready. Add it to your library to begin the pipeline.</div>
+        </div>
+      </div>
+      <div class="footer-actions"><span class="tiny">Source documents are not sent anywhere.</span><button class="btn primary" data-next="1">Next: chunk the text →</button></div>
+    </section>
+
+    <section class="panel stage hidden" data-stage="1">
+      <div class="panel-head"><div><div class="eyebrow">Step 2 · Chunking</div><h2>Break documents into useful pieces</h2><p class="panel-intro">Chunking splits long text into smaller passages. Good chunk boundaries help retrieval return focused information without losing too much context.</p></div><span class="stage-tag">Text → chunks</span></div>
+      <div class="grid-2">
+        <div>
+          <label class="field-label" for="chunkSize">Approximate chunk size (words)</label>
+          <select id="chunkSize"><option value="35">Small · 35 words</option><option value="55" selected>Medium · 55 words</option><option value="85">Large · 85 words</option></select>
+          <label class="field-label" for="overlap" style="margin-top:13px">Overlap between chunks</label>
+          <select id="overlap"><option value="0">No overlap</option><option value="8" selected>8 words</option><option value="15">15 words</option></select>
+          <div class="notice"><strong>Why overlap?</strong><br>A little overlap can preserve context when a sentence or idea falls near a chunk boundary. Too much overlap can add duplication and storage cost.</div>
+          <div class="btn-row"><button class="btn primary" id="makeChunks">Chunk all documents</button></div>
+        </div>
+        <div><div class="card-top"><span class="card-title">Chunk preview</span><span class="badge" id="chunkCount">0 chunks</span></div><div id="chunkList" class="cards"><div class="empty">Run chunking to see the passages created from your documents.</div></div></div>
+      </div>
+      <div class="footer-actions"><button class="btn secondary" data-prev="0">← Back</button><button class="btn primary" data-next="2">Next: create embeddings →</button></div>
+    </section>
+
+    <section class="panel stage hidden" data-stage="2">
+      <div class="panel-head"><div><div class="eyebrow">Step 3 · Embedding</div><h2>Turn meaning into searchable numbers</h2><p class="panel-intro">An embedding model maps text to a vector: a list of numbers that represents aspects of its meaning. Similar meanings tend to be closer in vector space.</p></div><span class="stage-tag">Chunks → vectors</span></div>
+      <div class="notice warn"><strong>Important simplification:</strong> these are illustrative, browser-generated vectors based on word categories—not real AI embeddings. Real systems use a trained embedding model.</div>
+      <div class="flow">
+        <div class="flow-step"><strong>Original text</strong><span>Readable chunk</span></div><div class="flow-arrow">→</div>
+        <div class="flow-step"><strong>Embedding model</strong><span>Maps text to numbers</span></div><div class="flow-arrow">→</div>
+        <div class="flow-step"><strong>Vector</strong><span>Numerical representation</span></div>
+      </div>
+      <div class="btn-row"><button class="btn primary" id="makeEmbeddings">Create illustrative embeddings</button></div>
+      <div id="embeddingList" class="cards" style="margin-top:14px"><div class="empty">Chunk your documents first, then create embeddings.</div></div>
+      <div class="footer-actions"><button class="btn secondary" data-prev="1">← Back</button><button class="btn primary" data-next="3">Next: store & index →</button></div>
+    </section>
+
+    <section class="panel stage hidden" data-stage="3">
+      <div class="panel-head"><div><div class="eyebrow">Step 4 · Indexing</div><h2>Build a searchable knowledge base</h2><p class="panel-intro">A vector store keeps vectors and usually the associated text, source, and metadata. An index helps the system find likely matches efficiently.</p></div><span class="stage-tag">Vectors + text + metadata</span></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-top"><span class="card-title">What is stored?</span><span class="badge green">Concept</span></div>
+          <p>Each record connects an embedding to its original text and useful metadata. The embedding helps find similar content; the original text is what can be passed to the LLM.</p>
+          <div class="mini-label">Example record</div>
+          <div class="vector" id="recordExample">Create embeddings to preview a record.</div>
+        </div>
+        <div class="card">
+          <div class="card-top"><span class="card-title">Index status</span><span class="badge" id="indexBadge">Not indexed</span></div>
+          <div id="indexSummary" class="small-text">Your chunks will appear here after you build the index.</div>
+          <div class="btn-row"><button class="btn primary" id="buildIndex">Build local index</button></div>
+          <div class="notice" id="indexNote">This in-browser index is a teaching aid, not a production vector database.</div>
+        </div>
+      </div>
+      <div class="footer-actions"><button class="btn secondary" data-prev="2">← Back</button><button class="btn primary" data-next="4">Next: ask a question →</button></div>
+    </section>
+
+    <section class="panel stage hidden" data-stage="4">
+      <div class="panel-head"><div><div class="eyebrow">Step 5 · Retrieval</div><h2>Find the passages that best match</h2><p class="panel-intro">At query time, the question is represented for search. The system scores candidate chunks and selects relevant passages to use as context.</p></div><span class="stage-tag">Question → relevant chunks</span></div>
+      <label class="field-label" for="userQuery">Ask the bank assistant a question</label>
+      <input id="userQuery" type="text" value="What documents do I need to open a business account?" placeholder="Ask a question about the documents">
+      <div class="grid-2" style="margin-top:14px">
+        <div><label class="field-label" for="topK">Number of chunks to retrieve</label><select id="topK"><option value="1">Top 1 chunk</option><option value="2" selected>Top 2 chunks</option><option value="3">Top 3 chunks</option><option value="5">Top 5 chunks</option></select><div class="helper">More chunks can add context, but irrelevant chunks can distract the model.</div></div>
+        <div><label class="field-label">Search method in this demo</label><div class="notice" style="margin-top:0">A simple keyword-overlap score. Production RAG may use vector similarity, keyword search, hybrid search, filters, and reranking.</div></div>
+      </div>
+      <div class="btn-row"><button class="btn primary" id="retrieveBtn">Retrieve relevant chunks</button><button class="btn secondary" id="tryTransfer">Try transfer question</button></div>
+      <div id="retrievalResults" style="margin-top:17px"><div class="empty">Run retrieval to rank chunks against your question.</div></div>
+      <div class="footer-actions"><button class="btn secondary" data-prev="3">← Back</button><button class="btn primary" data-next="5">Next: generate an answer →</button></div>
+    </section>
+
+    <section class="panel stage hidden" data-stage="5">
+      <div class="panel-head"><div><div class="eyebrow">Step 6 · Generation</div><h2>Give the LLM context, then generate</h2><p class="panel-intro">The LLM receives the user question and the retrieved text. It uses that context to produce a natural-language response. This demo uses a small rule-based answer composer, not a live LLM.</p></div><span class="stage-tag">Question + context → answer</span></div>
+      <div class="grid-2">
+        <div><div class="card-top"><span class="card-title">Context sent to the model</span><span class="badge pink" id="contextCount">0 passages</span></div><div id="contextPanel" class="empty">Run retrieval first to populate the context.</div></div>
+        <div><div class="card-top"><span class="card-title">Generation settings</span><span class="badge">Simulated</span></div><label class="field-label" for="tone">Answer style</label><select id="tone"><option value="clear">Clear and helpful</option><option value="brief">Brief answer</option><option value="cautious">Cautious, with limitations</option></select><label class="field-label" for="systemPrompt" style="margin-top:13px">Instruction to the assistant</label><textarea id="systemPrompt" style="min-height:100px">Answer using only the supplied context. If the context does not contain the answer, say what information is missing instead of guessing.</textarea><div class="helper">This is a prompt instruction. It guides the model; it does not guarantee perfect accuracy.</div></div>
+      </div>
+      <div class="btn-row"><button class="btn primary" id="generateAnswer">Generate simulated answer</button></div>
+      <div id="answerResult" style="margin-top:17px"><div class="empty">Generate an answer after retrieval.</div></div>
+      <div class="notice"><strong>Reality check:</strong> RAG can reduce unsupported answers, but it does not eliminate hallucinations. Retrieval quality, source quality, prompt design, and evaluation all matter.</div>
+      <div class="footer-actions"><button class="btn secondary" data-prev="4">← Back</button><button class="btn primary" data-next="6">Test your understanding →</button></div>
+    </section>
+
+    <section class="panel stage hidden" data-stage="6">
+      <div class="panel-head"><div><div class="eyebrow">Step 7 · Check your learning</div><h2>Can you explain the pipeline?</h2><p class="panel-intro">Choose the best answer for each question. The goal is not memorisation: it is understanding what each component does.</p></div><span class="stage-tag">Knowledge check</span></div>
+      <form id="quizForm">
+        <div class="card" style="margin-bottom:13px">
+          <div class="card-title">1. What is the main purpose of RAG?</div>
+          <label class="quiz-option"><input type="radio" name="q1" value="a"><span>To permanently train new knowledge into the LLM every time a document is uploaded.</span></label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"><span>To retrieve relevant external information and provide it as context for an LLM response.</span></label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"><span>To replace the LLM with a vector database.</span></label>
+        </div>
+        <div class="card" style="margin-bottom:13px">
+          <div class="card-title">2. What does an embedding do?</div>
+          <label class="quiz-option"><input type="radio" name="q2" value="a"><span>It is a numerical representation of text that supports similarity-based search.</span></label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"><span>It is the final answer shown to the user.</span></label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"><span>It guarantees the LLM cannot make mistakes.</span></label>
+        </div>
+        <div class="card" style="margin-bottom:13px">
+          <div class="card-title">3. What is usually passed to the LLM after retrieval?</div>
+          <label class="quiz-option"><input type="radio" name="q3" value="a"><span>Only opaque vectors, with no text.</span></label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"><span>All documents in the knowledge base every time.</span></label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"><span>The user question and selected text passages as context.</span></label>
+        </div>
+        <div class="card">
+          <div class="card-title">4. When are document chunks commonly embedded?</div>
+          <label class="quiz-option"><input type="radio" name="q4" value="a"><span>Usually during ingestion/indexing, before a user asks a question; the query is also represented for retrieval at query time.</span></label>
+          <label class="quiz-option"><input type="radio" name="q4" value="b"><span>Only after the LLM has already written the answer.</span></label>
+          <label class="quiz-option"><input type="radio" name="q4" value="c"><span>Never; chunking alone makes text searchable by meaning.</span></label>
+        </div>
+        <div class="btn-row"><button class="btn primary" type="submit">Check my answers</button><button class="btn secondary" type="button" id="retryQuiz">Try again</button></div>
+      </form>
+      <div id="quizResult" style="margin-top:16px"></div>
+      <div class="notice good"><strong>Remember the sequence:</strong> Ingest → Chunk → Embed → Store/Index → Retrieve → Generate → Evaluate.</div>
+      <div class="footer-actions"><button class="btn secondary" data-prev="5">← Back to generation</button><button class="btn primary" id="restart">Restart learning path ↻</button></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let documents = [];
+  let chunks = [];
+  let indexed = false;
+  let retrieved = [];
+  let activeStep = 0;
+  let nextDocId = 1;
+
+  const starterDoc = {
+    title: "Business Account Opening Guide",
+    text: "To open a business account, applicants need a valid government-issued ID for each signing officer, business registration documents, the business address, and tax identification details. The bank may request beneficial ownership information and additional verification depending on the business type. Applications can be submitted online. After the documents are received, the bank reviews the application and may contact the applicant if information is missing. Approval is subject to identity verification and the bank's account-opening policies."
+  };
+
+  const sampleDocs = [
+    starterDoc,
+    {title:"Interac e-Transfer FAQ", text:"Customers can send an Interac e-Transfer from online banking. The recipient is identified by email address or mobile number, unless Autodeposit is enabled. Transfer limits depend on the account and the bank's risk controls. If a transfer is pending, check the status before sending another payment. Never share your online banking password or one-time security codes."},
+    {title:"Loan Application Checklist", text:"A personal loan application may require government-issued identification, proof of income, recent bank statements, employment details, and consent for a credit check. Approval depends on eligibility, affordability, credit assessment, and verification. Submitting an application does not guarantee approval. Applicants may be contacted for additional information."},
+    {title:"Complaints and Disputes Policy", text:"If a customer has a complaint about an account or transaction, they should contact customer support and provide the date, amount, reference number, and a description of the issue. The bank will acknowledge the complaint and investigate. Customers should never include passwords or full card security codes in a complaint. Suspected fraud should be reported promptly."}
+  ];
+
+  function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+  function wordList(text) { return (text.toLowerCase().match(/[a-z0-9]+(?:['’-][a-z0-9]+)*/g) || []); }
+  function setStep(step) {
+    activeStep = Math.max(0, Math.min(6, step));
+    document.querySelectorAll(".stage").forEach(el => el.classList.toggle("hidden", Number(el.dataset.stage) !== activeStep));
+    document.querySelectorAll(".step-link").forEach(el => el.classList.toggle("active", Number(el.dataset.step) === activeStep));
+    $("progressText").textContent = `Step ${activeStep + 1} of 7`;
+    $("progressBar").style.width = `${((activeStep + 1) / 7) * 100}%`;
+    window.scrollTo({top:0,behavior:"smooth"});
+    if (activeStep === 0) renderDocs();
+    if (activeStep === 1) renderChunks();
+    if (activeStep === 2) renderEmbeddings();
+    if (activeStep === 3) renderIndex();
+    if (activeStep === 4) renderRetrieval();
+    if (activeStep === 5) renderContext();
+  }
+  function renderDocs() {
+    $("docCount").textContent = `${documents.length} document${documents.length===1?"":"s"}`;
+    $("docList").innerHTML = documents.length ? documents.map(d => `<div class="card"><div class="card-top"><span class="card-title">${escapeHTML(d.title)}</span><button class="btn secondary" style="padding:4px 8px;font-size:11px" data-remove-doc="${d.id}">Remove</button></div><p>${escapeHTML(d.text.slice(0,180))}${d.text.length>180?"…":""}</p><div class="mini-label">${wordList(d.text).length} words</div></div>`).join("") : `<div class="empty">No documents yet. Add one using the form.</div>`;
+    $("ingestNote").className = "notice " + (documents.length ? "good" : "warn");
+    $("ingestNote").textContent = documents.length ? "Source library ready. Next, split the documents into chunks." : "Add at least one document before continuing.";
+    $("docList").querySelectorAll("[data-remove-doc]").forEach(btn => btn.addEventListener("click", () => {
+      documents = documents.filter(d => d.id !== Number(btn.dataset.removeDoc));
+      invalidatePipeline(); renderDocs();
+    }));
+  }
+  function invalidatePipeline() { chunks = []; indexed = false; retrieved = []; }
+  function addDocument(title, text) {
+    if (!title.trim() || !text.trim()) { alert("Please enter both a document title and document content."); return; }
+    documents.push({id:nextDocId++, title:title.trim(), text:text.trim()});
+    invalidatePipeline(); renderDocs();
+  }
+  function loadSamples() {
+    documents = sampleDocs.map(d => ({id:nextDocId++, title:d.title, text:d.text}));
+    invalidatePipeline(); renderDocs();
+    $("docName").value = "Customer Support FAQ";
+    $("docText").value = "For help with digital banking, customers can contact support using the secure contact channel in the banking website. Never ask a customer for their password, PIN, or one-time security code. For suspected account fraud, customers should contact the bank immediately and review recent transactions.";
+  }
+  function makeChunks() {
+    const size = Number($("chunkSize").value);
+    const overlap = Number($("overlap").value);
+    chunks = [];
+    documents.forEach(doc => {
+      const words = doc.text.split(/\s+/).filter(Boolean);
+      const step = Math.max(1, size - overlap);
+      for (let start=0; start<words.length; start+=step) {
+        const part = words.slice(start, start+size).join(" ");
+        if (!part) continue;
+        chunks.push({id:`C${chunks.length+1}`, docId:doc.id, title:doc.title, text:part, vector:null});
+        if (start + size >= words.length) break;
+      }
+    });
+    indexed = false; retrieved = [];
+    renderChunks();
+  }
+  function renderChunks() {
+    $("chunkCount").textContent = `${chunks.length} chunk${chunks.length===1?"":"s"}`;
+    if (!chunks.length) { $("chunkList").innerHTML = `<div class="empty">Run chunking to see the passages created from your documents.</div>`; return; }
+    $("chunkList").innerHTML = chunks.map(c => `<div class="card"><div class="card-top"><span class="card-title">${c.id}</span><span class="badge">${escapeHTML(c.title)}</span></div><p>${escapeHTML(c.text)}</p><div class="mini-label">${wordList(c.text).length} words</div></div>`).join("");
+  }
+  // A transparent toy vector: each dimension is a weighted count from a few semantic word groups.
+  const dimensions = {
+    account:["account","open","opening","business","applicant","application","bank","banking"],
+    identity:["id","identification","identity","government","verification","verify","kyc","beneficial","ownership"],
+    money:["transfer","interac","etransfer","payment","send","recipient","autodeposit","limit","pending"],
+    loan:["loan","credit","income","affordability","employment","statement","approval","borrower"],
+    support:["complaint","complaints","dispute","support","fraud","issue","investigate","customer","contact"],
+    documents:["document","documents","proof","registration","address","tax","passport","required","details","checklist"],
+    security:["password","pin","code","security","risk","secure","one-time","fraud"]
+  };
+  function toyVector(text) {
+    const words = wordList(text);
+    const counts = Object.keys(dimensions).map(key => {
+      let count = 0;
+      words.forEach(w => { if (dimensions[key].some(term => w.includes(term) || term.includes(w) && w.length>4)) count++; });
+      return count / Math.max(1, words.length);
+    });
+    const norm = Math.sqrt(counts.reduce((sum,x)=>sum+x*x,0)) || 1;
+    return counts.map(x => Number((x/norm).toFixed(3)));
+  }
+  function makeEmbeddings() {
+    if (!chunks.length) { alert("Please chunk your documents first."); return; }
+    chunks = chunks.map(c => ({...c, vector:toyVector(c.text)}));
+    indexed = false; renderEmbeddings();
+  }
+  function renderEmbeddings() {
+    if (!chunks.length || !chunks.some(c=>c.vector)) { $("embeddingList").innerHTML = `<div class="empty">Chunk your documents first, then create embeddings.</div>`; return; }
+    $("embeddingList").innerHTML = chunks.map(c => `<div class="card"><div class="card-top"><span class="card-title">${c.id} · ${escapeHTML(c.title)}</span><span class="badge green">Embedded</span></div><p>${escapeHTML(c.text.slice(0,100))}${c.text.length>100?"…":""}</p><div class="mini-label">Illustrative vector · ${c.vector.length} dimensions</div><div class="vector">[${c.vector.join(", ")}]</div></div>`).join("");
+  }
+  function renderIndex() {
+    const first = chunks.find(c=>c.vector);
+    $("indexBadge").textContent = indexed ? "Indexed" : "Not indexed";
+    $("indexBadge").className = "badge " + (indexed ? "green" : "");
+    $("indexSummary").innerHTML = chunks.length && first
+      ? `<strong>${chunks.length}</strong> chunks available.<br><strong>${chunks.filter(c=>c.vector).length}</strong> vectors created.<br><strong>${documents.length}</strong> source documents.<br><br>${indexed ? "Local index is ready for the retrieval step." : "Create embeddings, then build the index."}`
+      : "Chunk and embed your documents before building the index.";
+    $("recordExample").textContent = first ? JSON.stringify({chunk_id:first.id, source:first.title, text:first.text.slice(0,90)+(first.text.length>90?"…":""), vector:first.vector, metadata:{document_id:first.docId}}, null, 2) : "Create embeddings to preview a record.";
+    $("indexNote").className = "notice " + (indexed ? "good" : "");
+    $("indexNote").textContent = indexed ? "Index built. The demo can now score chunks for a question." : "This in-browser index is a teaching aid, not a production vector database.";
+  }
+  function buildIndex() {
+    if (!chunks.length || !chunks.some(c=>c.vector)) { alert("Please chunk your documents and create embeddings first."); return; }
+    indexed = true; renderIndex();
+  }
+  function queryScore(query, text) {
+    const stop = new Set(["what","how","when","where","why","who","does","do","can","i","we","you","the","a","an","is","are","to","for","of","in","on","my","your","it","and","or","need","please","tell","me"]);
+    const q = [...new Set(wordList(query).filter(w=>!stop.has(w) && w.length>2))];
+    const t = new Set(wordList(text));
+    if (!q.length) return {score:0, matches:[]};
+    const matches = q.filter(w => t.has(w) || [...t].some(tw => tw.length>4 && (tw.includes(w) || w.includes(tw))));
+    return {score:matches.length/q.length, matches};
+  }
+  function retrieve() {
+    if (!indexed) { alert("Please create embeddings and build the index first."); return; }
+    const query = $("userQuery").value.trim();
+    if (!query) { alert("Enter a question first."); return; }
+    const k = Number($("topK").value);
+    retrieved = chunks.map(c => {
+      const result = queryScore(query,c.text + " " + c.title);
+      return {...c, score:result.score, matches:result.matches};
+    }).sort((a,b)=>b.score-a.score).slice(0,k).filter(c=>c.score>0);
+    renderRetrieval();
+  }
+  function renderRetrieval() {
+    if (!retrieved.length) { $("retrievalResults").innerHTML = `<div class="empty">No retrieval results yet, or no chunks matched. Build the index and run a search. Try using terms found in your documents.</div>`; return; }
+    $("retrievalResults").innerHTML = `<div class="card-top"><span class="card-title">Retrieved passages</span><span class="badge pink">${retrieved.length} selected</span></div>` + retrieved.map((c,i)=>`<div class="rank-row"><div class="rank-num">${i+1}</div><div><div class="rank-title">${c.id} · ${escapeHTML(c.title)}</div><div class="rank-excerpt">${escapeHTML(c.text)}</div><div class="bar"><div style="width:${Math.round(c.score*100)}%"></div></div></div><div class="score">${Math.round(c.score*100)}%<div class="tiny">toy match</div></div></div>`).join("") + `<div class="notice">The percentage is a simple word-overlap score, not a calibrated probability that a passage is correct.</div>`;
+  }
+  function renderContext() {
+    $("contextCount").textContent = `${retrieved.length} passage${retrieved.length===1?"":"s"}`;
+    if (!retrieved.length) { $("contextPanel").className="empty"; $("contextPanel").innerHTML="Run retrieval first to populate the context."; return; }
+    $("contextPanel").className="cards";
+    $("contextPanel").innerHTML = retrieved.map(c=>`<div class="card"><div class="card-top"><span class="card-title">${c.id}</span><span class="badge">${escapeHTML(c.title)}</span></div><p>${escapeHTML(c.text)}</p></div>`).join("");
+  }
+  function generateAnswer() {
+    if (!retrieved.length) { alert("Run retrieval first."); return; }
+    const q = $("userQuery").value.trim();
+    const context = retrieved.map(c=>c.text).join(" ");
+    const qWords = wordList(q);
+    const keywords = [...new Set(qWords.filter(w=>w.length>3 && !["what","does","with","from","that","this","need","have","your","when","where","which"].includes(w)))];
+    const contextWords = new Set(wordList(context));
+    const matched = keywords.filter(w=>contextWords.has(w) || [...contextWords].some(cw=>cw.length>4&&(cw.includes(w)||w.includes(cw))));
+    let answer;
+    if (!retrieved.length || retrieved.every(c=>c.score===0) || matched.length===0) {
+      answer = "I couldn't find enough information in the retrieved passages to answer that confidently. Please consult the bank's official guidance or contact customer support.";
+    } else {
+      const isBusiness = /business account|open.*account|account.*open/i.test(q);
+      const isTransfer = /transfer|interac|etransfer|autodeposit|limit/i.test(q);
+      const isLoan = /loan|borrow|credit|income/i.test(q);
+      const isComplaint = /complaint|dispute|fraud|issue/i.test(q);
+      if (isBusiness && /registration|signing officer|tax identification/i.test(context)) {
+        answer = "To open a business account, prepare:\n• Valid government-issued ID for each signing officer\n• Business registration documents\n• The business address\n• Tax identification details\n\nThe bank may also request beneficial ownership information or additional verification. Applications can be submitted online, and approval depends on identity verification and the bank's account-opening policies.";
+      } else if (isTransfer && /interac|recipient|transfer limits/i.test(context)) {
+        answer = "You can send an Interac e-Transfer through online banking. The recipient is identified by email address or mobile number, unless Autodeposit is enabled. Transfer limits depend on your account and the bank's risk controls. If a transfer is pending, check its status before sending another payment.";
+      } else if (isLoan && /proof of income|credit check|loan application/i.test(context)) {
+        answer = "A loan application may require government-issued ID, proof of income, recent bank statements, employment details, and consent for a credit check. Approval depends on eligibility, affordability, credit assessment, and verification. Submitting an application does not guarantee approval.";
+      } else if (isComplaint && /complaint|dispute|customer support/i.test(context)) {
+        answer = "Contact customer support and provide the transaction date, amount, reference number, and a description of the issue. For suspected fraud, report it promptly. Do not include passwords or full card security codes in a complaint.";
+      } else {
+        const first = retrieved[0];
+        answer = `Based on the retrieved information from “${first.title}”:\n\n${first.text}\n\nThis answer is limited to the passages retrieved. Check the source policy for the complete and current requirements.`;
+      }
+      if ($("tone").value==="brief") answer = answer.split("\n\n")[0];
+      if ($("tone").value==="cautious") answer += "\n\nNote: This is a simulated response based on the selected passages. Confirm details against the bank's official, current policy.";
+    }
+    const instruction = $("systemPrompt").value.trim();
+    $("answerResult").innerHTML = `<div class="answer-box"><h3>Simulated assistant response</h3><p>${escapeHTML(answer)}</p><div class="source-list"><strong style="font-size:12px">Sources used</strong><ul>${retrieved.map(c=>`<li>${escapeHTML(c.title)} · ${c.id}</li>`).join("")}</ul></div></div><div class="notice"><strong>Prompt used:</strong> ${escapeHTML(instruction || "(No instruction entered)")}</div>`;
+  }
+  function checkQuiz(e) {
+    e.preventDefault();
+    const answers = {q1:"b",q2:"a",q3:"c",q4:"a"};
+    const explanations = {
+      q1:"RAG retrieves external information at query time and gives it to the LLM as context; it does not retrain the model for each document.",
+      q2:"An embedding is a numerical representation used to support similarity-based retrieval. It is not the answer itself.",
+      q3:"The system usually supplies the user question plus selected readable text passages, not only opaque vectors or the entire knowledge base.",
+      q4:"Document chunks are commonly embedded during ingestion/indexing. At query time, the question is also represented for searching."
+    };
+    let score=0;
+    document.querySelectorAll(".quiz-option").forEach(el=>el.classList.remove("correct","incorrect"));
+    Object.keys(answers).forEach(name=>{
+      const chosen = document.querySelector(`input[name="${name}"]:checked`);
+      const correct = document.querySelector(`input[name="${name}"][value="${answers[name]}"]`);
+      correct.closest(".quiz-option").classList.add("correct");
+      if (chosen && chosen.value===answers[name]) score++;
+      else if (chosen) chosen.closest(".quiz-option").classList.add("incorrect");
+    });
+    const feedback = score===4 ? "Excellent—you understand the core RAG flow." : score>=2 ? "Good progress. Review the explanations below, then try again." : "Use the explanations to revisit the core distinctions, then try again.";
+    $("quizResult").innerHTML = `<div class="answer-box"><h3>You scored ${score}/4</h3><p>${feedback}</p><ul>${Object.keys(answers).map((name,i)=>`<li style="font-size:12px;margin:7px 0"><strong>Q${i+1}:</strong> ${explanations[name]}</li>`).join("")}</ul></div>`;
+  }
+  function resetAll() {
+    documents = [{id:nextDocId++,title:starterDoc.title,text:starterDoc.text}];
+    invalidatePipeline(); $("docName").value="Business Account Opening Guide"; $("docText").value=starterDoc.text;
+    $("chunkSize").value="55"; $("overlap").value="8"; $("userQuery").value="What documents do I need to open a business account?";
+    $("topK").value="2"; $("tone").value="clear"; $("systemPrompt").value="Answer using only the supplied context. If the context does not contain the answer, say what information is missing instead of guessing.";
+    $("quizForm").reset(); $("quizResult").innerHTML=""; $("answerResult").innerHTML='<div class="empty">Generate an answer after retrieval.</div>';
+    $("retrievalResults").innerHTML='<div class="empty">Run retrieval to rank chunks against your question.</div>';
+    $("chunkList").innerHTML='<div class="empty">Run chunking to see the passages created from your documents.</div>';
+    $("embeddingList").innerHTML='<div class="empty">Chunk your documents first, then create embeddings.</div>';
+    renderDocs(); setStep(0);
+  }
+
+  $("addDoc").addEventListener("click",()=>addDocument($("docName").value,$("docText").value));
+  $("loadSamples").addEventListener("click",loadSamples);
+  $("makeChunks").addEventListener("click",makeChunks);
+  $("makeEmbeddings").addEventListener("click",makeEmbeddings);
+  $("buildIndex").addEventListener("click",buildIndex);
+  $("retrieveBtn").addEventListener("click",retrieve);
+  $("tryTransfer").addEventListener("click",()=>{$("userQuery").value="What are the Interac e-Transfer limits?"; if(indexed) retrieve();});
+  $("generateAnswer").addEventListener("click",generateAnswer);
+  $("quizForm").addEventListener("submit",checkQuiz);
+  $("retryQuiz").addEventListener("click",()=>{$("quizForm").reset();$("quizResult").innerHTML="";document.querySelectorAll(".quiz-option").forEach(el=>el.classList.remove("correct","incorrect"));});
+  $("restart").addEventListener("click",resetAll);
+  $("resetTop").addEventListener("click",resetAll);
+  document.querySelectorAll("[data-step]").forEach(el=>el.addEventListener("click",()=>setStep(Number(el.dataset.step))));
+  document.querySelectorAll("[data-next]").forEach(el=>el.addEventListener("click",()=>setStep(Number(el.dataset.next))));
+  document.querySelectorAll("[data-prev]").forEach(el=>el.addEventListener("click",()=>setStep(Number(el.dataset.prev))));
+
+  resetAll();
+})();
+</script>
+</body>
+</html>
